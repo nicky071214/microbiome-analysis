@@ -15,6 +15,9 @@ The starter TDA workflow:
 5. Runs persistent homology with Ripser.
 6. Saves persistence pairs, diagrams, barcode plots, and MDS coordinates.
 
+If a Bray-Curtis distance matrix already exists, the workflow can use that
+directly instead of recalculating distances from the ASV table.
+
 ## Inputs
 
 ```text
@@ -42,6 +45,18 @@ python scripts/05_tda_persistent_homology.py \
   --max-dim 2 \
   --min-feature-prevalence 2
 ```
+
+If you already have a Bray-Curtis matrix:
+
+```bash
+python scripts/05_tda_persistent_homology.py \
+  --distance-matrix path/to/bray_curtis.tsv \
+  --metadata config/metadata_template.tsv \
+  --grouping-column group
+```
+
+The distance matrix should be square, symmetric, non-negative, have sample IDs
+as row names and column names, and have zeroes on the diagonal.
 
 ## Outputs
 

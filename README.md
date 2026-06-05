@@ -60,6 +60,12 @@ Rscript scripts/04_diversity_phyloseq.R
 python scripts/05_tda_persistent_homology.py
 ```
 
+If you already have a Bray-Curtis distance matrix, pass it directly:
+
+```bash
+python scripts/05_tda_persistent_homology.py --distance-matrix path/to/bray_curtis.tsv
+```
+
 ## Standard Workflow
 
 1. Receive PacBio CCS/HiFi reads and the sequencing report.

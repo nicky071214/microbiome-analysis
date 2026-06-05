@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Run starter TDA on a microbiome feature table.
+"""Run starter TDA on a microbiome feature table or distance matrix.
 
-The script expects a BIOM-exported feature table TSV with features as rows and
-samples as columns. It converts counts to relative abundance by default, builds
-a Bray-Curtis distance matrix, computes persistent homology with ripser, and
-writes publication-friendly starter plots and tables.
+The script can start from either a BIOM-exported feature table TSV with
+features as rows and samples as columns, or a precomputed square sample distance
+matrix. For feature tables, it converts counts to relative abundance by default,
+builds a Bray-Curtis distance matrix, computes persistent homology with ripser,
+and writes publication-friendly starter plots and tables.
 """
 
 from __future__ import annotations
@@ -21,11 +22,14 @@ from ripser import ripser
 from sklearn.manifold import MDS
 from sklearn.metrics import pairwise_distances
 
+DEFAULT_METADATA = "config/metadata_template.tsv"
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run TDA persistent homology on microbiome data.")
     parser.add_argument("--feature-table", default="results/tables/feature-table.tsv")
-    parser.add_argument("--metadata", default="config/metadata_template.tsv")
+    parser.add_argument("--distance-matrix", default=None, help="Optional precomputed square sample distance matrix.")
+    parser.add_argument("--metadata", default=DEFAULT_METADATA)
     parser.add_argument("--grouping-column", default="group")
     parser.add_argument("--out-tables", default="results/tables")
     parser.add_argument("--out-figures", default="results/figures")
@@ -68,6 +72,54 @@ def read_metadata(path: Path) -> pd.DataFrame:
         duplicates = sorted(metadata.loc[metadata["sample-id"].duplicated(), "sample-id"].unique())
         raise ValueError(f"Duplicate sample IDs in metadata: {', '.join(duplicates)}")
     return metadata.set_index("sample-id")
+
+
+def read_distance_matrix(path: Path) -> pd.DataFrame:
+    if not path.exists():
+        raise FileNotFoundError(f"Missing distance matrix: {path}")
+
+    sep = "," if path.suffix.lower() == ".csv" else "\t"
+    matrix = pd.read_csv(path, sep=sep, dtype=str)
+    if matrix.empty:
+        raise ValueError(f"Distance matrix has no rows: {path}")
+
+    first_col = matrix.columns[0]
+    matrix = matrix.rename(columns={first_col: "sample_id"}).set_index("sample_id")
+    matrix.index = matrix.index.astype(str)
+    matrix.columns = matrix.columns.astype(str)
+    matrix = matrix.apply(pd.to_numeric, errors="coerce")
+
+    if matrix.isna().any().any():
+        raise ValueError("Distance matrix contains non-numeric or missing values.")
+    if matrix.shape[0] != matrix.shape[1]:
+        raise ValueError("Distance matrix must be square.")
+    if set(matrix.index) != set(matrix.columns):
+        raise ValueError("Distance matrix row and column sample IDs must match.")
+
+    matrix = matrix.loc[matrix.index, matrix.index]
+    if not np.allclose(matrix.values, matrix.values.T, atol=1e-8):
+        raise ValueError("Distance matrix must be symmetric.")
+    if not np.allclose(np.diag(matrix.values), 0, atol=1e-8):
+        raise ValueError("Distance matrix diagonal must be zero.")
+    if (matrix.values < 0).any():
+        raise ValueError("Distance matrix cannot contain negative values.")
+
+    return matrix
+
+
+def metadata_for_samples(metadata_path: Path, sample_ids: list[str], grouping_column: str, allow_sample_only: bool) -> pd.DataFrame:
+    if metadata_path.exists():
+        metadata = read_metadata(metadata_path)
+        common_samples = [sample for sample in sample_ids if sample in metadata.index]
+        if len(common_samples) >= 3:
+            return metadata.loc[common_samples]
+        if not allow_sample_only:
+            raise ValueError("Fewer than three samples overlap between metadata and the distance/feature table.")
+
+    metadata = pd.DataFrame(index=sample_ids)
+    metadata.index.name = "sample-id"
+    metadata[grouping_column] = "all_samples"
+    return metadata
 
 
 def filter_features(table: pd.DataFrame, min_total_count: float, min_prevalence: int) -> pd.DataFrame:
@@ -199,30 +251,51 @@ def plot_mds(
 def main() -> None:
     args = parse_args()
     feature_table_path = Path(args.feature_table)
+    distance_matrix_path = Path(args.distance_matrix) if args.distance_matrix else None
     metadata_path = Path(args.metadata)
     out_tables = Path(args.out_tables)
     out_figures = Path(args.out_figures)
     out_tables.mkdir(parents=True, exist_ok=True)
     out_figures.mkdir(parents=True, exist_ok=True)
 
-    feature_table = read_feature_table(feature_table_path)
-    metadata = read_metadata(metadata_path)
+    if distance_matrix_path is not None:
+        distance_df = read_distance_matrix(distance_matrix_path)
+        sample_ids = distance_df.index.to_list()
+        metadata = metadata_for_samples(
+            metadata_path=metadata_path,
+            sample_ids=sample_ids,
+            grouping_column=args.grouping_column,
+            allow_sample_only=args.metadata == DEFAULT_METADATA,
+        )
+        common_samples = [sample for sample in sample_ids if sample in metadata.index]
+        if len(common_samples) < 3:
+            raise ValueError("TDA requires at least three samples.")
+        distance_df = distance_df.loc[common_samples, common_samples]
+        feature_count: int | str = "not_applicable_precomputed_distance"
+        transform_label = "precomputed_distance"
+    else:
+        feature_table = read_feature_table(feature_table_path)
+        metadata = read_metadata(metadata_path)
 
-    common_samples = [sample for sample in feature_table.columns if sample in metadata.index]
-    if len(common_samples) < 3:
-        raise ValueError("TDA requires at least three samples shared by feature table and metadata.")
+        common_samples = [sample for sample in feature_table.columns if sample in metadata.index]
+        if len(common_samples) < 3:
+            raise ValueError("TDA requires at least three samples shared by feature table and metadata.")
 
-    feature_table = feature_table[common_samples]
-    metadata = metadata.loc[common_samples]
-    feature_table = filter_features(feature_table, args.min_feature_total_count, args.min_feature_prevalence)
+        feature_table = feature_table[common_samples]
+        metadata = metadata.loc[common_samples]
+        feature_table = filter_features(feature_table, args.min_feature_total_count, args.min_feature_prevalence)
 
-    sample_by_feature = feature_table.T
-    transformed = transform_table(sample_by_feature, args.transform)
+        sample_by_feature = feature_table.T
+        transformed = transform_table(sample_by_feature, args.transform)
 
-    distance_matrix = pairwise_distances(transformed, metric=args.metric)
-    distance_df = pd.DataFrame(distance_matrix, index=transformed.index, columns=transformed.index)
+        distance_matrix = pairwise_distances(transformed, metric=args.metric)
+        distance_df = pd.DataFrame(distance_matrix, index=transformed.index, columns=transformed.index)
+        feature_count = feature_table.shape[0]
+        transform_label = args.transform
+
     distance_df.index.name = "sample_id"
     distance_df.to_csv(out_tables / "tda_distance_matrix.tsv", sep="\t")
+    distance_matrix = distance_df.values
 
     threshold = np.inf if args.threshold is None else args.threshold
     result = ripser(
@@ -257,16 +330,16 @@ def main() -> None:
     summary = pd.DataFrame(
         {
             "metric": [args.metric],
-            "transform": [args.transform],
+            "transform": [transform_label],
             "samples": [len(common_samples)],
-            "features_after_filtering": [feature_table.shape[0]],
+            "features_after_filtering": [feature_count],
             "max_dimension": [args.max_dim],
             "threshold": [args.threshold if args.threshold is not None else "none"],
         }
     )
     summary.to_csv(out_tables / "tda_summary.tsv", sep="\t", index=False)
 
-    print(f"TDA complete for {len(common_samples)} samples and {feature_table.shape[0]} features.")
+    print(f"TDA complete for {len(common_samples)} samples.")
     print(f"Wrote {out_tables / 'tda_persistence_pairs.tsv'}")
     print(f"Wrote {out_figures / 'tda_persistence_diagram.png'}")
 

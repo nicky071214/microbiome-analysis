@@ -65,3 +65,18 @@ Checklist:
 - Review denoising stats.
 - Run taxonomy and diversity scripts.
 - Document any parameter changes.
+
+## 6. Run exploratory TDA analysis
+
+Run persistent homology on the exported feature table.
+
+Checklist:
+
+- Confirm `results/tables/feature-table.tsv` exists.
+- Confirm metadata sample IDs match the feature table.
+- Run `python scripts/05_tda_persistent_homology.py`.
+- Review `results/figures/tda_persistence_diagram.png`.
+- Review `results/figures/tda_barcode.png`.
+- Check whether TDA structure is driven by group, sequencing run, extraction
+  batch, PCR batch, or sample depth.
+- Document interpretation as exploratory unless supported by follow-up tests.

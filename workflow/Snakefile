@@ -5,7 +5,8 @@ rule all:
         "results/qzv/demux-pacbio-ccs.qzv",
         "results/qzv/feature-table.qzv",
         "results/qzv/taxa-bar-plots.qzv",
-        "results/tables/alpha_diversity.tsv"
+        "results/tables/alpha_diversity.tsv",
+        "results/tables/tda_persistence_pairs.tsv"
 
 rule import_qiime2:
     input:
@@ -58,3 +59,32 @@ rule diversity:
         alpha="results/tables/alpha_diversity.tsv"
     shell:
         "FEATURE_TABLE={input.feature_table} TAXONOMY={input.taxonomy} METADATA={input.metadata} Rscript scripts/04_diversity_phyloseq.R"
+
+rule tda:
+    input:
+        feature_table="results/tables/feature-table.tsv",
+        metadata="config/metadata_template.tsv"
+    output:
+        persistence_pairs="results/tables/tda_persistence_pairs.tsv",
+        distance_matrix="results/tables/tda_distance_matrix.tsv",
+        summary="results/tables/tda_summary.tsv",
+        diagram="results/figures/tda_persistence_diagram.png",
+        barcode="results/figures/tda_barcode.png",
+        mds="results/figures/tda_mds.png"
+    params:
+        grouping_column=config["tda"]["grouping_column"],
+        transform=config["tda"]["transform"],
+        metric=config["tda"]["distance_metric"],
+        max_dim=config["tda"]["max_dimension"],
+        min_feature_total_count=config["tda"]["min_feature_total_count"],
+        min_feature_prevalence=config["tda"]["min_feature_prevalence"]
+    shell:
+        "python scripts/05_tda_persistent_homology.py "
+        "--feature-table {input.feature_table} "
+        "--metadata {input.metadata} "
+        "--grouping-column {params.grouping_column} "
+        "--transform {params.transform} "
+        "--metric {params.metric} "
+        "--max-dim {params.max_dim} "
+        "--min-feature-total-count {params.min_feature_total_count} "
+        "--min-feature-prevalence {params.min_feature_prevalence}"

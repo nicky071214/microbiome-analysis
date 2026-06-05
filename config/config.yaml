@@ -36,6 +36,17 @@ diversity:
   sampling_depth: REPLACE_AFTER_REVIEWING_FEATURE_TABLE_QZV
   grouping_column: group
 
+tda:
+  feature_table: results/tables/feature-table.tsv
+  metadata: config/metadata_template.tsv
+  grouping_column: group
+  transform: relative_abundance
+  distance_metric: braycurtis
+  max_dimension: 2
+  threshold: null
+  min_feature_total_count: 0
+  min_feature_prevalence: 1
+
 outputs:
   qiime2_dir: results/qiime2
   qzv_dir: results/qzv

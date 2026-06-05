@@ -141,3 +141,23 @@ Record:
 - read counts before and after denoising.
 - statistical tests used.
 
+## 10. Optional TDA Analysis
+
+After taxonomy export has produced `results/tables/feature-table.tsv`, run:
+
+```bash
+python scripts/05_tda_persistent_homology.py
+```
+
+Review:
+
+```text
+results/tables/tda_persistence_pairs.tsv
+results/tables/tda_summary.tsv
+results/figures/tda_persistence_diagram.png
+results/figures/tda_barcode.png
+results/figures/tda_mds.png
+```
+
+Interpret TDA as exploratory. Check whether persistent structure is explained by
+biology, sequencing run, extraction batch, PCR batch, or sample depth.

@@ -4,8 +4,13 @@ channels:
   - bioconda
 dependencies:
   - python=3.11
+  - numpy
   - pandas
   - pyyaml
+  - scipy
+  - scikit-learn
+  - matplotlib
+  - seaborn
   - snakemake-minimal
   - r-base=4.4
   - r-tidyverse
@@ -14,4 +19,7 @@ dependencies:
   - r-cowplot
   - bioconductor-phyloseq
   - bioconductor-biostrings
-
+  - pip
+  - pip:
+      - ripser
+      - persim

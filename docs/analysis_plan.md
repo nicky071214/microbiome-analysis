@@ -21,6 +21,7 @@ community composition, diversity, and group-level patterns.
 - Alpha diversity table and plot.
 - Bray-Curtis PCoA table and plot.
 - phyloseq R object.
+- TDA persistence diagram, barcode, distance matrix, and MDS coordinates.
 
 ## Initial QC Questions
 
@@ -97,3 +98,24 @@ Each analysis run should record:
 - metadata file version
 - raw data checksum file
 
+## Optional TDA Plan
+
+Use `scripts/05_tda_persistent_homology.py` after feature table export.
+
+Starter settings:
+
+- transform: relative abundance
+- distance: Bray-Curtis
+- maximum homology dimension: 2
+- grouping column: `group`
+
+Primary outputs:
+
+- `results/tables/tda_persistence_pairs.tsv`
+- `results/tables/tda_distance_matrix.tsv`
+- `results/figures/tda_persistence_diagram.png`
+- `results/figures/tda_barcode.png`
+- `results/figures/tda_mds.png`
+
+TDA results should be interpreted as exploratory and checked against batch,
+sequencing run, and sample depth.

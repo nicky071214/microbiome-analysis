@@ -25,6 +25,8 @@ Do not commit sensitive or large data to GitHub.
 - Typical target size: about 1,500 bp
 - Default denoising approach: QIIME 2 DADA2 `denoise-ccs`
 - Downstream analysis: QIIME 2 plus R/phyloseq-style summaries
+- Optional exploratory analysis: TDA persistent homology on microbiome distance
+  space
 
 ## Repository Layout
 
@@ -55,6 +57,7 @@ bash scripts/01_import_qiime2.sh
 FRONT_PRIMER="YOUR_FORWARD_PRIMER" ADAPTER="YOUR_REVERSE_PRIMER" bash scripts/02_denoise_dada2_ccs.sh
 CLASSIFIER="references/classifier-full-length-16s.qza" bash scripts/03_taxonomy.sh
 Rscript scripts/04_diversity_phyloseq.R
+python scripts/05_tda_persistent_homology.py
 ```
 
 ## Standard Workflow
@@ -68,7 +71,8 @@ Rscript scripts/04_diversity_phyloseq.R
 7. Assign taxonomy using a full-length 16S-compatible reference database.
 8. Generate feature table, representative sequences, taxonomy table, diversity
    metrics, and visualizations.
-9. Export final tables and figures for reporting.
+9. Optionally run TDA persistent homology on the exported feature table.
+10. Export final tables and figures for reporting.
 
 ## Important Notes
 
@@ -86,3 +90,5 @@ Rscript scripts/04_diversity_phyloseq.R
 - QIIME 2 DADA2 `denoise-ccs`: https://docs.qiime2.org/2024.10/plugins/available/dada2/denoise-ccs/
 - QIIME 2 amplicon documentation: https://amplicon-docs.qiime2.org/
 - DADA2: https://benjjneb.github.io/dada2/
+- Ripser.py: https://ripser.scikit-tda.org/
+- Persim: https://persim.scikit-tda.org/

@@ -1,0 +1,60 @@
+configfile: "config/config.yaml"
+
+rule all:
+    input:
+        "results/qzv/demux-pacbio-ccs.qzv",
+        "results/qzv/feature-table.qzv",
+        "results/qzv/taxa-bar-plots.qzv",
+        "results/tables/alpha_diversity.tsv"
+
+rule import_qiime2:
+    input:
+        manifest="config/pacbio_manifest.tsv",
+        metadata="config/metadata_template.tsv"
+    output:
+        demux="results/qiime2/demux-pacbio-ccs.qza",
+        qzv="results/qzv/demux-pacbio-ccs.qzv"
+    shell:
+        "MANIFEST={input.manifest} METADATA={input.metadata} DEMUX_OUT={output.demux} bash scripts/01_import_qiime2.sh"
+
+rule denoise_ccs:
+    input:
+        demux="results/qiime2/demux-pacbio-ccs.qza",
+        metadata="config/metadata_template.tsv"
+    output:
+        table="results/qiime2/feature-table.qza",
+        rep_seqs="results/qiime2/rep-seqs.qza",
+        stats="results/qiime2/denoising-stats.qza",
+        feature_table_qzv="results/qzv/feature-table.qzv",
+        rep_seqs_qzv="results/qzv/rep-seqs.qzv",
+        denoising_stats_qzv="results/qzv/denoising-stats.qzv"
+    params:
+        front_primer=config["pacbio_full_length_16s"]["front_primer"],
+        adapter=config["pacbio_full_length_16s"]["adapter_or_reverse_primer"]
+    shell:
+        "DEMUX={input.demux} METADATA={input.metadata} FRONT_PRIMER={params.front_primer} ADAPTER={params.adapter} bash scripts/02_denoise_dada2_ccs.sh"
+
+rule taxonomy:
+    input:
+        table="results/qiime2/feature-table.qza",
+        rep_seqs="results/qiime2/rep-seqs.qza",
+        metadata="config/metadata_template.tsv",
+        classifier=config["taxonomy"]["classifier"]
+    output:
+        taxonomy="results/qiime2/taxonomy.qza",
+        taxonomy_qzv="results/qzv/taxonomy.qzv",
+        taxa_barplot="results/qzv/taxa-bar-plots.qzv",
+        feature_table_tsv="results/tables/feature-table.tsv",
+        taxonomy_tsv="results/tables/taxonomy.tsv"
+    shell:
+        "TABLE={input.table} REP_SEQS={input.rep_seqs} METADATA={input.metadata} CLASSIFIER={input.classifier} TAXONOMY_OUT={output.taxonomy} bash scripts/03_taxonomy.sh"
+
+rule diversity:
+    input:
+        feature_table="results/tables/feature-table.tsv",
+        taxonomy="results/tables/taxonomy.tsv",
+        metadata="config/metadata_template.tsv"
+    output:
+        alpha="results/tables/alpha_diversity.tsv"
+    shell:
+        "FEATURE_TABLE={input.feature_table} TAXONOMY={input.taxonomy} METADATA={input.metadata} Rscript scripts/04_diversity_phyloseq.R"

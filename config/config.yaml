@@ -1,0 +1,44 @@
+project:
+  name: microbiome-analysis
+  assay: full_length_16s
+  platform: pacbio_ccs_hifi
+  qiime_distribution: amplicon
+
+inputs:
+  manifest: config/pacbio_manifest.tsv
+  metadata: config/metadata_template.tsv
+  qiime_type: SampleData[SequencesWithQuality]
+  qiime_import_format: SingleEndFastqManifestPhred33V2
+
+pacbio_full_length_16s:
+  expected_amplicon_length_bp: 1500
+  front_primer: REPLACE_WITH_FORWARD_PRIMER_5_TO_3
+  adapter_or_reverse_primer: REPLACE_WITH_REVERSE_PRIMER_5_TO_3
+  min_len: 1000
+  max_len: 1800
+  trunc_len: 0
+  trim_left: 0
+  max_ee: 2.0
+  trunc_q: 2
+  max_mismatch: 2
+  allow_indels: false
+  pooling_method: independent
+  chimera_method: consensus
+  min_fold_parent_over_abundance: 3.5
+  threads: 0
+
+taxonomy:
+  classifier: references/classifier-full-length-16s.qza
+  method: classify-sklearn
+  note: Use a classifier trained for full-length 16S, not only V3-V4 or another short region.
+
+diversity:
+  sampling_depth: REPLACE_AFTER_REVIEWING_FEATURE_TABLE_QZV
+  grouping_column: group
+
+outputs:
+  qiime2_dir: results/qiime2
+  qzv_dir: results/qzv
+  exported_dir: results/exported
+  tables_dir: results/tables
+  figures_dir: results/figures

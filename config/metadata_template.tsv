@@ -1,0 +1,3 @@
+sample-id	subject_id	group	timepoint	sample_type	body_site	extraction_batch	pcr_batch	sequencing_run	notes
+sample001	subject001	control	baseline	stool	gut	batch01	pcr01	run01	example_row_replace_before_analysis
+sample002	subject002	treatment	baseline	stool	gut	batch01	pcr01	run01	example_row_replace_before_analysis

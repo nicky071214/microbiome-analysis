@@ -1,0 +1,46 @@
+# Raw sequencing data and large vendor files
+data/raw/
+data/external/
+*.fastq
+*.fastq.gz
+*.fq
+*.fq.gz
+*.bam
+*.sam
+*.ccs.bam
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+
+# QIIME 2 intermediate artifacts can be regenerated
+*.qza
+*.qzv
+
+# Keep result folders, but ignore bulky generated contents by default
+results/qiime2/*
+results/qzv/*
+results/exported/*
+results/phyloseq/*
+!results/**/README.md
+
+# Local environments and notebooks
+.venv/
+venv/
+.Rproj.user/
+.Rhistory
+.RData
+.ipynb_checkpoints/
+
+# Operating system and editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# Secrets
+.env
+*.pem
+*.key
+secrets/

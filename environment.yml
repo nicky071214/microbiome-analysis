@@ -1,0 +1,17 @@
+name: microbiome-analysis
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.11
+  - pandas
+  - pyyaml
+  - snakemake-minimal
+  - r-base=4.4
+  - r-tidyverse
+  - r-vegan
+  - r-ape
+  - r-cowplot
+  - bioconductor-phyloseq
+  - bioconductor-biostrings
+

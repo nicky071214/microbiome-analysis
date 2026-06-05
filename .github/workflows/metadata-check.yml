@@ -1,0 +1,28 @@
+name: Metadata check
+
+on:
+  push:
+    paths:
+      - "config/*.tsv"
+      - "scripts/check_metadata.py"
+      - ".github/workflows/metadata-check.yml"
+  pull_request:
+    paths:
+      - "config/*.tsv"
+      - "scripts/check_metadata.py"
+      - ".github/workflows/metadata-check.yml"
+
+jobs:
+  check-metadata:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate metadata template
+        run: python scripts/check_metadata.py config/metadata_template.tsv
